@@ -1,17 +1,52 @@
 import os
 import logging
-from flask import Flask, render_template, request
-from joblib import load
 import pandas as pd
+from flask import (
+    Flask, render_template, request,
+    redirect, url_for, session
+)
+from joblib import load
 
-# ---------- konfigurasi logging ----------
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+# =========================================================
+# KONFIGURASI LOGGING
+# =========================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s"
+)
 logger = logging.getLogger(__name__)
 
-# ---------- app ----------
+# =========================================================
+# APP
+# =========================================================
 app = Flask(__name__)
+app.secret_key = "araas-secret-key"  # ganti di production
 
-# ---------- load model (sekali saat startup) ----------
+# =========================================================
+# GLOBAL SECURITY GUARD (LOGIN WAJIB) — FIXED
+# =========================================================
+@app.before_request
+def require_login():
+    # FIX WAJIB: cegah endpoint None (favicon, refresh, back)
+    if request.endpoint is None:
+        return
+
+    allowed = {"login", "static"}
+    if request.endpoint not in allowed:
+        if "role" not in session:
+            return redirect(url_for("login"))
+
+# =========================================================
+# DUMMY USERS (LOGIN ROLE)
+# =========================================================
+USERS = {
+    "mahasiswa1": {"password": "12345", "role": "mahasiswa"},
+    "akademik1": {"password": "admin123", "role": "akademik"},
+}
+
+# =========================================================
+# LOAD MODEL
+# =========================================================
 MODEL_PATH = "model_kelulusan.joblib"
 model = None
 model_load_error = None
@@ -19,222 +54,215 @@ model_load_error = None
 if os.path.exists(MODEL_PATH):
     try:
         model = load(MODEL_PATH)
-        logger.info("Model berhasil dimuat dari: %s", MODEL_PATH)
-        # log info model kelas jika ada
-        if hasattr(model, "classes_"):
-            logger.info("Model classes_: %s", getattr(model, "classes_"))
-        logger.info("Model punya predict_proba: %s", hasattr(model, "predict_proba"))
+        logger.info("Model berhasil dimuat dari %s", MODEL_PATH)
     except Exception as e:
-        model_load_error = f"Error loading model: {e}"
-        logger.exception("Gagal memuat model")
+        model_load_error = f"Gagal load model: {e}"
+        logger.exception(model_load_error)
 else:
-    model_load_error = f"Model file not found at '{MODEL_PATH}'"
+    model_load_error = f"Model file tidak ditemukan di '{MODEL_PATH}'"
     logger.error(model_load_error)
 
-# ---------- helper konversi & validasi ----------
+# =========================================================
+# HELPER VALIDASI
+# =========================================================
 def to_float(value, name):
     try:
         return float(value)
     except Exception:
-        raise ValueError(f"Field '{name}' harus berupa angka (contoh: 3.25).")
+        raise ValueError(f"Field '{name}' harus berupa angka.")
 
 def to_int(value, name):
     try:
-        # terima input numeric seperti "85.0" atau "85"
         return int(float(value))
     except Exception:
-        raise ValueError(f"Field '{name}' harus berupa bilangan bulat (contoh: 90).")
+        raise ValueError(f"Field '{name}' harus berupa bilangan bulat.")
 
-# ---------- SOFTBOOST: menaikkan probabilitas secara wajar ----------
-def adjust_prob_softboost(prob, input_row):
-    """
-    Memberikan dorongan probabilitas berdasarkan kondisi fitur yang sangat baik.
-    Hasil akhir tetap terlihat natural (tidak tiba-tiba 99%).
-    """
-    ipk = float(input_row.get('ipk', 0))
-    pres = float(input_row.get('presensi', 0))
-    mengulang = int(input_row.get('mengulang', 0))
-    sks = float(input_row.get('sks_lulus', 0))
-
+# =========================================================
+# SOFTBOOST
+# =========================================================
+def adjust_prob_softboost(prob, row):
     boost = 0.0
+    if row["ipk"] >= 3.9:
+        boost += 0.12
+    elif row["ipk"] >= 3.7:
+        boost += 0.07
 
-    # IPK
-    if ipk >= 3.9:
-        boost += 0.12     # +12%
-    elif ipk >= 3.7:
-        boost += 0.07     # +7%
+    if row["presensi"] >= 98:
+        boost += 0.10
+    elif row["presensi"] >= 95:
+        boost += 0.05
 
-    # Presensi
-    if pres >= 98:
-        boost += 0.10     # +10%
-    elif pres >= 95:
-        boost += 0.05     # +5%
+    if row["mengulang"] == 0:
+        boost += 0.05
 
-    # Tidak mengulang
-    if mengulang == 0:
-        boost += 0.05     # +5%
+    if row["sks_lulus"] >= 140:
+        boost += 0.03
 
-    # SKS besar → hampir selesai
-    if sks >= 140:
-        boost += 0.03     # +3%
+    return min(prob + boost, 0.985)
 
-    # Total boost tidak boleh kelewat ekstrem
-    boosted = prob + boost
-
-    # Maksimal ditampilkan 0.985 (98.5%) → natural, tidak 100%
-    if boosted > 0.985:
-        boosted = 0.985
-
-    return boosted
-
-# ---------- fungsi prediksi ----------
+# =========================================================
+# PREDIKSI
+# =========================================================
 def prediksi_kelulusan(ipk, sks_lulus, presensi, mengulang):
-    """
-    Mengembalikan tuple: (label, prob_percent, rekomendasi)
-    prob_percent: float antara 0..100
-    """
     if model is None:
-        raise RuntimeError(model_load_error or "Model tidak tersedia.")
+        raise RuntimeError(model_load_error or "Model tidak tersedia")
 
-    # Buat DataFrame input (urutkan kolom seperti saat training)
-    df_input = pd.DataFrame([{
+    df = pd.DataFrame([{
         "ipk": ipk,
         "sks_lulus": sks_lulus,
         "presensi": presensi,
-        "mengulang": mengulang,
+        "mengulang": mengulang
     }])
 
-    # Prediksi kelas (0/1)
-    y_pred = model.predict(df_input)[0]
+    y_pred = model.predict(df)[0]
 
-    # Ambil probabilitas kelas positif (robust terhadap urutan classes_)
-    prob_lulus = None
     if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(df_input)[0]
-        # Jika model expose classes_, cari index label 1
-        if hasattr(model, "classes_"):
-            try:
-                classes = list(model.classes_)
-                # dukung 1 dan '1' serta 1.0
-                if 1 in classes:
-                    pos_index = classes.index(1)
-                elif 1.0 in classes:
-                    pos_index = classes.index(1.0)
-                elif "1" in classes:
-                    pos_index = classes.index("1")
-                else:
-                    # fallback: ambil indeks 1 jika tersedia, else 0
-                    pos_index = 1 if len(probs) > 1 else 0
-            except Exception:
-                pos_index = 1 if len(probs) > 1 else 0
-        else:
-            pos_index = 1 if len(probs) > 1 else 0
-
-        # ambil probabilitas pada index yang ditentukan
-        try:
-            prob_lulus = float(probs[pos_index])
-        except Exception:
-            # jika ada error, fallback ke deterministik
-            prob_lulus = float(bool(y_pred))
+        probs = model.predict_proba(df)[0]
+        classes = list(getattr(model, "classes_", []))
+        idx = classes.index(1) if 1 in classes else 1
+        prob = float(probs[idx])
     else:
-        # model tidak punya predict_proba -> gunakan prediksi deterministik
-        prob_lulus = float(bool(y_pred))
+        prob = float(bool(y_pred))
 
-    # Pastikan berada di range 0..1
-    prob_lulus = max(0.0, min(prob_lulus, 1.0))
+    prob = adjust_prob_softboost(prob, df.iloc[0])
+    prob_percent = prob * 100
 
-    # --- APPLY SOFTBOOST: siapkan input_row dan terapkan adjust_prob_softboost ---
-    input_row = {
-        "ipk": ipk,
-        "presensi": presensi,
-        "sks_lulus": sks_lulus,
-        "mengulang": mengulang
-    }
-    prob_lulus = adjust_prob_softboost(prob_lulus, input_row)
-    # ---------------------------------------------------------------------------
+    label = "Lulus tepat waktu" if y_pred == 1 else "Berisiko terlambat"
 
-    prob_percent = prob_lulus * 100.0
-
-    # Label teks
-    label = "Lulus tepat waktu" if (y_pred == 1 or y_pred == "1" or y_pred == 1.0) else "Berisiko terlambat"
-
-    # Rekomendasi berdasarkan probabilitas
     if prob_percent >= 85:
-        rekomendasi = "Pertahankan performa. Indeks Prestasi Semester (IPS), presensi, dan konsistensi belajar."
+        rekomendasi = "Pertahankan performa akademik."
     elif prob_percent >= 60:
-        rekomendasi = ("Perlu sedikit peningkatan. Tingkatkan presensi, atur jadwal belajar, "
-                       "dan konsultasi dengan dosen PA bila perlu.")
+        rekomendasi = "Perlu konseling akademik dan peningkatan presensi."
     else:
-        rekomendasi = ("Wajib ikut mentoring / bimbingan intensif. Fokus pada peningkatan Indeks Prestasi Semester (IPS), "
-                       "kurangi mengulang mata kuliah, dan tingkatkan kehadiran.")
+        rekomendasi = "Wajib mentoring intensif dan evaluasi studi."
 
     return label, prob_percent, rekomendasi
 
-# ---------- route utama ----------
-@app.route("/", methods=["GET", "POST"])
-def index():
-    result = None
+# =========================================================
+# ROOT → LOGIN
+# =========================================================
+@app.route("/")
+def root():
+    return redirect(url_for("login"))
+
+# =========================================================
+# LOGIN
+# =========================================================
+@app.route("/login", methods=["GET", "POST"])
+def login():
     error = None
 
-    # Jika model gagal load, sampaikan pesan sederhana (tampilkan di UI)
-    if model_load_error:
-        error = model_load_error
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        user = USERS.get(username)
+        if not user or user["password"] != password:
+            error = "Username atau password salah"
+        else:
+            session["username"] = username
+            session["role"] = user["role"]
+            logger.info("Login sukses: %s (%s)", username, user["role"])
+
+            if user["role"] == "mahasiswa":
+                return redirect(url_for("mahasiswa"))
+            return redirect(url_for("akademik"))
+
+    return render_template("login.html", error=error)
+
+# =========================================================
+# LOGOUT
+# =========================================================
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# =========================================================
+# MAHASISWA
+# =========================================================
+@app.route("/mahasiswa", methods=["GET", "POST"])
+def mahasiswa():
+    if session.get("role") != "mahasiswa":
+        return redirect(url_for("login"))
+
+    result, error = None, model_load_error
 
     if request.method == "POST":
         try:
-            # Ambil dan sanitasi input
             nama = request.form.get("nama", "").strip()
             nim = request.form.get("nim", "").strip()
 
-            ipk = to_float(request.form.get("ipk", ""), "ipk")
-            sks_lulus = to_int(request.form.get("sks_lulus", "0"), "sks_lulus")
-            presensi = to_int(request.form.get("presensi", "0"), "presensi")
-            mengulang = to_int(request.form.get("mengulang", "0"), "mengulang")
+            ipk = to_float(request.form.get("ipk"), "ipk")
+            sks = to_int(request.form.get("sks_lulus"), "sks_lulus")
+            presensi = to_int(request.form.get("presensi"), "presensi")
+            mengulang = to_int(request.form.get("mengulang"), "mengulang")
 
-            # Validasi lebih lanjut
-            if not nama:
-                raise ValueError("Nama tidak boleh kosong.")
-            if not nim:
-                raise ValueError("NIM tidak boleh kosong.")
-            if not (0.0 <= ipk <= 4.0):
-                raise ValueError("IPK harus antara 0.0 - 4.0.")
-            if not (0 <= presensi <= 100):
-                raise ValueError("Presensi harus antara 0 - 100.")
-            if sks_lulus < 0:
-                raise ValueError("SKS Lulus harus >= 0.")
-            if mengulang < 0:
-                raise ValueError("Jumlah mengulang harus >= 0.")
-
-            # Panggil prediksi
-            label, prob_percent, rekomendasi = prediksi_kelulusan(
-                ipk, sks_lulus, presensi, mengulang
+            label, prob, rekomendasi = prediksi_kelulusan(
+                ipk, sks, presensi, mengulang
             )
 
-            # Siapkan hasil untuk template
             result = {
                 "nama": nama,
                 "nim": nim,
                 "label": label,
-                "probabilitas": f"{prob_percent:.2f}%",
-                "prob_value": max(0, min(prob_percent, 100)),  # 0..100 untuk width
+                "probabilitas": f"{prob:.2f}%",
+                "prob_value": prob,
                 "rekomendasi": rekomendasi,
-                "ipk": ipk,
-                "sks_lulus": sks_lulus,
-                "presensi": presensi,
-                "mengulang": mengulang,
             }
-
-            logger.info("Prediksi berhasil untuk NIM=%s: label=%s prob=%.2f", nim, label, prob_percent)
 
         except Exception as e:
             error = str(e)
-            result = None
-            logger.warning("Error saat memproses request: %s", error)
 
     return render_template("index.html", result=result, error=error)
 
-# ---------- jalankan app ----------
+# =========================================================
+# AKADEMIK (ARaaS)
+# =========================================================
+@app.route("/akademik", methods=["GET", "POST"])
+def akademik():
+    if session.get("role") != "akademik":
+        return redirect(url_for("login"))
+
+    results, summary, error = [], [], None
+
+    if request.method == "POST":
+        file = request.files.get("file")
+
+        if not file or not file.filename.endswith(".csv"):
+            error = "File CSV tidak valid"
+        else:
+            df = pd.read_csv(file)
+
+            for _, row in df.iterrows():
+                label, prob, _ = prediksi_kelulusan(
+                    row["ipk"],
+                    row["sks_lulus"],
+                    row["presensi"],
+                    row["mengulang"]
+                )
+
+                results.append({
+                    "nama": row["nama"],
+                    "nim": row["nim"],
+                    "angkatan": row["angkatan"],
+                    "label": label,
+                    "probabilitas": prob,
+                })
+
+            summary = (
+                pd.DataFrame(results)
+                .groupby("angkatan")
+                .size()
+                .reset_index(name="total")
+                .to_dict(orient="records")
+            )
+
+    return render_template("upload.html", results=results, summary=summary, error=error)
+
+# =========================================================
+# RUN
+# =========================================================
 if __name__ == "__main__":
-    # Jangan nyalakan debug=True di production
     debug_flag = os.getenv("FLASK_DEBUG", "True").lower() in ("1", "true", "yes")
     app.run(debug=debug_flag)
