@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Dosen{% endblock %}
+{% block content %}
+
+<style>
+  .pill{ border-radius:999px; }
+  .mini { border:1px solid #eef2f6; background:#fbfcfe; border-radius:16px; padding:14px; }
+</style>
+
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <h4 class="fw-bold mb-1">Dashboard Dosen</h4>
+    <div class="soft">Monitoring mahasiswa per kelas + ringkasan risk.</div>
+  </div>
+  <span class="badge text-bg-primary pill">Dosen</span>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="fw-bold mb-2">Filter Kelas</div>
+        <div class="soft small mb-3">Pilih kelas untuk melihat ringkasan dan daftar mahasiswa.</div>
+<form method="get" class="row g-2 mb-3">
+
+  <!-- FILTER FAKULTAS -->
+  <div class="col-md-4">
+    <select name="fakultas" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Semua Fakultas --</option>
+      {% for f in fakultas_list %}
+        <option value="{{ f.id }}"
+          {% if selected_fakultas == f.id|string %}selected{% endif %}>
+          {{ f.code }} - {{ f.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- FILTER KELAS -->
+  <div class="col-md-4">
+    <select name="kelas" class="form-select" onchange="this.form.submit()">
+      <option value="">-- Semua Kelas --</option>
+      {% for k in kelas_list %}
+        <option value="{{ k.code }}"
+          {% if selected_kelas == k.code %}selected{% endif %}>
+          {{ k.code }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+</form>
+
+
+
+
+        <script>
+          (function(){
+            const fakultasSelect = document.getElementById('fakultas_select');
+            const kelasSelect = document.getElementById('kelas_select');
+            if(!fakultasSelect || !kelasSelect) return;
+
+            fakultasSelect.addEventListener('change', function(){
+              const selected = this.value;
+              for(const opt of kelasSelect.options){
+                const f = opt.getAttribute('data-fakultas') || '';
+                if(!selected) {
+                  opt.style.display = '';
+                } else {
+                  opt.style.display = (f === selected) ? '' : 'none';
+                }
+              }
+              // if currently selected kelas is hidden, reset to default
+              if(kelasSelect.selectedOptions.length){
+                const sel = kelasSelect.selectedOptions[0];
+                if(sel.style.display === 'none') kelasSelect.value = '';
+              }
+            });
+          })();
+        </script>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="mini">
+              <div class="soft small">Total</div>
+              <div class="fs-4 fw-bold">{{ summary.total }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="mini">
+              <div class="soft small">High Risk</div>
+              <div class="fs-4 fw-bold text-danger">{{ summary.high }} <span class="soft small">({{ summary.high_pct }}%)</span></div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="mini">
+              <div class="soft small">Medium Risk</div>
+              <div class="fs-4 fw-bold text-warning">{{ summary.med }} <span class="soft small">({{ summary.med_pct }}%)</span></div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="mini">
+              <div class="soft small">Low Risk</div>
+              <div class="fs-4 fw-bold text-success">{{ summary.low }} <span class="soft small">({{ summary.low_pct }}%)</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-body p-4">
+        <div class="fw-bold mb-2">Daftar Prediksi Mahasiswa</div>
+        <div class="soft small mb-3">Urut terbaru. Klik detail untuk riwayat.</div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th>No</th>
+                <th class="text-start">Nama</th>
+                <th>NIM</th>
+                <th>Kelas</th>
+                <th>Prob.</th>
+                <th>Risk</th>
+                <th>Waktu</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in data %}
+              <tr class="text-center">
+                <td>{{ loop.index }}</td>
+                <td class="text-start">
+                  <div class="fw-semibold">{{ r.nama_mahasiswa }}</div>
+                  <div class="soft small">IPK {{ r.ipk }} • SKS {{ r.sks_lulus }} • Presensi {{ r.presensi }}%</div>
+                </td>
+                <td>{{ r.nim }}</td>
+                <td>{{ r.kelas }}</td>
+                <td class="fw-semibold text-primary">{{ r.probability }}%</td>
+                <td>
+                  {% if r.risk == "Low Risk" %}
+                    <span class="badge text-bg-success pill">Low</span>
+                  {% elif r.risk == "Medium Risk" %}
+                    <span class="badge text-bg-warning pill">Medium</span>
+                  {% else %}
+                    <span class="badge text-bg-danger pill">High</span>
+                  {% endif %}
+                </td>
+                <td class="small">{{ r.timestamp }}</td>
+                <td>
+                  <a class="btn btn-outline-primary btn-sm btn-round"
+                     href="{{ url_for('dosen.detail_mahasiswa', nim=r.nim) }}">Detail</a>
+                </td>
+              </tr>
+              {% endfor %}
+
+              {% if data|length == 0 %}
+              <tr><td colspan="8" class="text-center soft">Belum ada data prediksi untuk filter ini.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

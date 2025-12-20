@@ -1,71 +1,115 @@
-# train_model_fixed.py
-"""
-Training script (fixed & ready-to-run)
-
-- Persyaratan:
-    pip install scikit-learn pandas joblib
-
-- Cara pakai:
-    python train_model_fixed.py
-
-Hasil:
-- model disimpan ke model_kelulusan.joblib
-- menampilkan metrik evaluasi ke console
-"""
+# train_model_80_10_10_sigmoid.py
 
 import warnings
 warnings.filterwarnings("ignore")
 
 import os
 import json
-import numpy as np
 import pandas as pd
 
+from joblib import dump
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import accuracy_score, roc_auc_score, classification_report, confusion_matrix
-from joblib import dump
 
 RANDOM_STATE = 42
+
 DATA_PATH = "dataset_kelulusan_mahasiswa.csv"
 OUTPUT_MODEL = "model_kelulusan.joblib"
-SUMMARY_JSON = "train_summary_fixed.json"
+SUMMARY_JSON = "train_summary_80_10_10_sigmoid.json"
 
+FEATURES = ["ipk", "sks_lulus", "presensi", "mengulang"]
+TARGET = "lulus_tepat_waktu"
+
+
+# -----------------------
+# Utilities
+# -----------------------
 def load_data(path):
     if not os.path.exists(path):
         raise FileNotFoundError(f"Dataset not found: {path}")
-    df = pd.read_csv(path)
-    return df
+    return pd.read_csv(path)
+
 
 def prepare_features(df):
-    # Use the same 4 features as the Flask app for compatibility
-    X = df[["ipk", "sks_lulus", "presensi", "mengulang"]].copy()
-    y = df["lulus_tepat_waktu"].astype(int).copy()
+    missing = [c for c in FEATURES + [TARGET] if c not in df.columns]
+    if missing:
+        raise KeyError(f"Missing required columns: {missing}")
+
+    X = df[FEATURES].copy()
+    y = df[TARGET].astype(int)
+
+    for col in FEATURES:
+        X[col] = pd.to_numeric(X[col], errors="coerce")
+
     return X, y
 
-def train_and_tune(X_train, y_train):
-    # Pipeline: scaling + RandomForest
-    pipe = Pipeline([
-        ("scaler", StandardScaler()),
-        ("clf", RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1))
+
+def build_pipeline():
+    return Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("clf", RandomForestClassifier(
+            random_state=RANDOM_STATE,
+            n_jobs=-1
+        ))
     ])
 
-    # Hyperparameter distribution for randomized search
+
+def evaluate(model, X, y, label):
+    y_pred = model.predict(X)
+    y_prob = model.predict_proba(X)[:, 1]
+
+    acc = accuracy_score(y, y_pred)
+    auc = roc_auc_score(y, y_prob)
+
+    print(f"\n[{label}] Accuracy : {acc:.4f}")
+    print(f"[{label}] ROC AUC  : {auc:.4f}")
+    print(f"[{label}] Report:\n{classification_report(y, y_pred, digits=4)}")
+    print(f"[{label}] Confusion Matrix:\n{confusion_matrix(y, y_pred)}")
+
+    return {"accuracy": acc, "roc_auc": auc}
+
+
+# -----------------------
+# Main
+# -----------------------
+def main():
+    print("Loading dataset...")
+    df = load_data(DATA_PATH)
+    X, y = prepare_features(df)
+
+    # 80 / 10 / 10 split
+    X_tmp, X_test, y_tmp, y_test = train_test_split(
+        X, y, test_size=0.10, stratify=y, random_state=RANDOM_STATE
+    )
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_tmp, y_tmp,
+        test_size=0.10 / 0.90,
+        stratify=y_tmp,
+        random_state=RANDOM_STATE
+    )
+
+    print(f"Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}")
+
+    pipe = build_pipeline()
+
+    print("\nTraining + Hyperparameter Search...")
     param_dist = {
-        "clf__n_estimators": [100, 200, 400, 600],
-        "clf__max_depth": [5, 8, 12, None],
-        "clf__min_samples_split": [2, 4, 6, 10],
-        "clf__min_samples_leaf": [1, 2, 3, 4],
+        "clf__n_estimators": [100, 200, 400],
+        "clf__max_depth": [5, 8, None],
+        "clf__min_samples_split": [2, 4, 6],
+        "clf__min_samples_leaf": [1, 2, 3],
         "clf__class_weight": [None, "balanced"]
     }
 
     rs = RandomizedSearchCV(
-        estimator=pipe,
-        param_distributions=param_dist,
-        n_iter=24,
+        pipe,
+        param_dist,
+        n_iter=20,
         scoring="roc_auc",
         cv=4,
         random_state=RANDOM_STATE,
@@ -74,82 +118,52 @@ def train_and_tune(X_train, y_train):
     )
 
     rs.fit(X_train, y_train)
-    best_pipe = rs.best_estimator_
-    return best_pipe, rs.best_params_, rs
+    best_model = rs.best_estimator_
 
-def calibrate_model(pipe, X_train, y_train):
-    # Calibrate probabilities to improve reliability
-    calibrator = CalibratedClassifierCV(pipe, method="isotonic", cv=3)
-    calibrator.fit(X_train, y_train)
-    return calibrator
+    print("Best params:", rs.best_params_)
 
-def evaluate_model(model, X_test, y_test):
-    y_pred = model.predict(X_test)
-    # Some calibrated wrappers expose predict_proba
-    try:
-        y_prob = model.predict_proba(X_test)[:, 1]
-    except Exception:
-        y_prob = None
+    print("\nValidation (before calibration)")
+    val_uncal = evaluate(best_model, X_val, y_val, "VAL-Uncalibrated")
 
-    acc = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, digits=4)
-    cm = confusion_matrix(y_test, y_pred)
-    auc = roc_auc_score(y_test, y_prob) if y_prob is not None else None
-
-    return {
-        "accuracy": acc,
-        "roc_auc": auc,
-        "report": report,
-        "confusion_matrix": cm.tolist()
-    }
-
-def main():
-    print("Loading dataset:", DATA_PATH)
-    df = load_data(DATA_PATH)
-    print("Rows:", len(df))
-    print("Target distribution:\n", df["lulus_tepat_waktu"].value_counts(normalize=True))
-
-    X, y = prepare_features(df)
-
-    # Train/test split (stratify to keep class balance)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
+    # -----------------------
+    # SIGMOID CALIBRATION
+    # -----------------------
+    print("\nApplying SIGMOID calibration (using VAL)...")
+    calibrated = CalibratedClassifierCV(
+        best_model,
+        method="sigmoid",
+        cv="prefit"
     )
+    calibrated.fit(X_val, y_val)
 
-    print("\nStarting hyperparameter search and training (RandomizedSearchCV)...")
-    best_pipe, best_params, rs_obj = train_and_tune(X_train, y_train)
-    print("Best params found:", best_params)
+    print("\nValidation (after calibration)")
+    val_cal = evaluate(calibrated, X_val, y_val, "VAL-Calibrated")
 
-    print("\nCalibrating model probabilities (isotonic)...")
-    calibrated = calibrate_model(best_pipe, X_train, y_train)
+    print("\nFinal Test Evaluation")
+    test_cal = evaluate(calibrated, X_test, y_test, "TEST-Calibrated")
 
-    print("\nEvaluating on test set...")
-    metrics = evaluate_model(calibrated, X_test, y_test)
-    print(f"Accuracy (test): {metrics['accuracy']:.4f}")
-    if metrics["roc_auc"] is not None:
-        print(f"ROC AUC (test): {metrics['roc_auc']:.4f}")
-    print("\nClassification report:\n", metrics["report"])
-    print("Confusion matrix:\n", np.array(metrics["confusion_matrix"]))
-
-    # Save calibrated model
+    # Save model
     dump(calibrated, OUTPUT_MODEL)
-    print(f"\nSaved calibrated model to: {OUTPUT_MODEL}")
+    print(f"\nModel saved to: {OUTPUT_MODEL}")
 
     # Save summary
     summary = {
-        "dataset": DATA_PATH,
-        "n_rows": len(df),
-        "target_balance": df["lulus_tepat_waktu"].value_counts(normalize=True).to_dict(),
-        "best_params": best_params,
+        "features": FEATURES,
+        "split": {"train": 0.8, "val": 0.1, "test": 0.1},
+        "best_params": rs.best_params_,
         "metrics": {
-            "accuracy": metrics["accuracy"],
-            "roc_auc": metrics["roc_auc"]
+            "val_uncalibrated": val_uncal,
+            "val_calibrated": val_cal,
+            "test_calibrated": test_cal
         },
         "model_path": OUTPUT_MODEL
     }
+
     with open(SUMMARY_JSON, "w") as f:
         json.dump(summary, f, indent=2)
-    print(f"Wrote training summary to: {SUMMARY_JSON}")
+
+    print(f"Summary saved to: {SUMMARY_JSON}")
+
 
 if __name__ == "__main__":
     main()

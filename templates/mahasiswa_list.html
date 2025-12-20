@@ -1,0 +1,76 @@
+{% extends "base.html" %} {% block title %}Daftar Mahasiswa{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Daftar Mahasiswa</h4>
+        <a
+          class="btn btn-sm btn-success"
+          href="{{ url_for('akademik.add_mahasiswa') }}"
+          >+ Tambah</a
+        >
+      </div>
+      <div class="table-responsive mt-3">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>No</th>
+              <th>Nama</th>
+              <th>NIM</th>
+              <th>Prodi</th>
+              <th>Angkatan</th>
+              <th>Kelas</th>
+              <th>Pembimbing</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ s.nama_mahasiswa }}</td>
+              <td>{{ s.nim }}</td>
+              <td>{{ s.prodi }}</td>
+              <td>{{ s.angkatan }}</td>
+              <td>
+                {{ s.kelas.code if s.kelas else (s.kelas_code or '-') }}{% if
+                s.kelas and s.kelas.fakultas %}
+                <small class="text-muted">({{ s.kelas.fakultas.code }})</small
+                >{% endif %}
+              </td>
+              <td>{{ s.advisor.username if s.advisor else '-' }}</td>
+              <td>
+                <a
+                  class="btn btn-sm btn-outline-primary"
+                  href="{{ url_for('akademik.detail_mahasiswa', nim=s.nim) }}"
+                  >Detail</a
+                >
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{{ url_for('akademik.edit_mahasiswa', student_id=s.id) }}"
+                  >Edit</a
+                >
+                <form
+                  method="post"
+                  action="{{ url_for('akademik.delete_mahasiswa', student_id=s.id) }}"
+                  style="display: inline"
+                  onsubmit="return confirm('Hapus mahasiswa ini?')"
+                >
+                  <button class="btn btn-sm btn-danger">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %} {% if students|length == 0 %}
+            <tr>
+              <td colspan="8" class="text-center soft">Belum ada mahasiswa.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

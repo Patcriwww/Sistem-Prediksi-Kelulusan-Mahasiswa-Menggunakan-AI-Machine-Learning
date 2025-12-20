@@ -1,0 +1,377 @@
+{% extends "base.html" %} {% block title %}Dashboard Akademik{% endblock %} {%
+block content %}
+
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <h4 class="fw-bold mb-1">Dashboard Akademik</h4>
+    <div class="soft">Ringkasan risiko akademik kampus berbasis AI (ARaaS)</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a
+      class="btn btn-success btn-sm btn-round"
+      href="{{ url_for('akademik.export_excel_route') }}"
+      >Export Excel</a
+    >
+    <a
+      class="btn btn-danger btn-sm btn-round"
+      href="{{ url_for('akademik.export_pdf_route') }}"
+      >Export PDF</a
+    >
+
+    <a
+      class="btn btn-primary btn-sm btn-round"
+      href="{{ url_for('akademik.add_dosen') }}"
+      >Tambah Dosen</a
+    >
+    <a
+      class="btn btn-primary btn-sm btn-round"
+      href="{{ url_for('akademik.add_mahasiswa') }}"
+      >Tambah Mahasiswa</a
+    >
+    <a
+      class="btn btn-secondary btn-sm btn-round"
+      href="{{ url_for('akademik.assign_advisor') }}"
+      >Assign Pembimbing</a
+    >
+
+    <form
+      action="{{ url_for('akademik.delete_all') }}"
+      method="post"
+      onsubmit="return confirm('Yakin reset semua data prediksi? Ini akan menghapus seluruh CSV.');"
+    >
+      <button class="btn btn-outline-danger btn-sm btn-round" type="submit">
+        Reset Data
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <!-- Summary cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="soft small">Total Prediksi</div>
+            <div class="fs-3 fw-bold">{{ data|length }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="soft small">Low Risk</div>
+            <div class="fs-3 fw-bold text-success">
+              {{ data | selectattr("risk","equalto","Low Risk") | list | length
+              }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="soft small">Medium Risk</div>
+            <div class="fs-3 fw-bold text-warning">
+              {{ data | selectattr("risk","equalto","Medium Risk") | list |
+              length }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-body p-4">
+            <div class="soft small">High Risk</div>
+            <div class="fs-3 fw-bold text-danger">
+              {{ data | selectattr("risk","equalto","High Risk") | list | length
+              }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <!-- Chart card -->
+      <div class="col-lg-4">
+        <div class="card h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold">Distribusi Risiko</div>
+              <span class="soft small">Doughnut Chart</span>
+            </div>
+            <div class="soft small mb-3">
+              Proporsi Low/Medium/High Risk dari seluruh prediksi.
+            </div>
+
+            <div class="position-relative" style="height: 260px">
+              <canvas id="riskChart"></canvas>
+              <div
+                id="chartFallback"
+                class="soft small text-center"
+                style="
+                  display: none;
+                  position: absolute;
+                  inset: 0;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                Chart tidak dapat ditampilkan.
+              </div>
+            </div>
+
+            <div class="mt-3 small soft">
+              Catatan: Data diambil dari endpoint
+              <code>/dashboard/akademik/api/risk-summary</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick insights -->
+      <div class="col-lg-8">
+        <div class="card h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-bold">Ringkasan Tindakan</div>
+              <span class="badge text-bg-primary">Early Warning</span>
+            </div>
+            <div class="soft small mb-3">
+              Fokuskan monitoring pada mahasiswa dengan <b>High Risk</b> dan
+              <b>Medium Risk</b> untuk intervensi dini.
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div
+                  class="p-3 rounded-3"
+                  style="background: #fff7ed; border: 1px solid #ffedd5"
+                >
+                  <div class="fw-semibold">Medium Risk</div>
+                  <div class="soft small mt-1">
+                    Disarankan bimbingan akademik berkala, evaluasi strategi
+                    belajar, dan monitoring presensi.
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div
+                  class="p-3 rounded-3"
+                  style="background: #fef2f2; border: 1px solid #fee2e2"
+                >
+                  <div class="fw-semibold">High Risk</div>
+                  <div class="soft small mt-1">
+                    Prioritaskan konseling, pendampingan intensif, dan rencana
+                    studi terstruktur.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <div class="fw-semibold">Manajemen Data</div>
+                <div class="soft small">
+                  Anda dapat menghapus data per mahasiswa atau per record pada
+                  tabel di bawah.
+                </div>
+              </div>
+              <div class="soft small">
+                Aksi bersifat permanen (CSV overwrite).
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data table -->
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-bold">Data Prediksi</div>
+          <div class="soft small">Total: {{ data|length }}</div>
+        </div>
+        <div class="soft small mb-3">
+          Klik <b>Detail</b> untuk melihat riwayat prediksi mahasiswa.
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th style="width: 50px">No</th>
+                <th class="text-start">Nama</th>
+                <th style="width: 140px">NIM</th>
+                <th style="width: 90px">IPK</th>
+                <th style="width: 90px">SKS</th>
+                <th style="width: 110px">Presensi</th>
+                <th style="width: 110px">Mengulang</th>
+                <th style="width: 110px">Prob.</th>
+                <th style="width: 120px">Risk</th>
+                <th style="width: 170px">Waktu</th>
+                <th style="width: 280px">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in data|reverse %}
+              <tr class="text-center">
+                <td>{{ loop.index }}</td>
+                <td class="text-start">
+                  <div class="fw-semibold">{{ r.nama_mahasiswa }}</div>
+                  <div class="soft small">
+                    {{ r.prodi }} • Angkatan {{ r.angkatan }}
+                  </div>
+                </td>
+                <td>{{ r.nim }}</td>
+                <td>{{ r.ipk }}</td>
+                <td>{{ r.sks_lulus }}</td>
+                <td>{{ r.presensi }}%</td>
+                <td>{{ r.mengulang }}</td>
+                <td class="fw-semibold text-primary">{{ r.probability }}%</td>
+                <td>
+                  {% if r.risk == "Low Risk" %}
+                  <span class="badge text-bg-success">Low</span>
+                  {% elif r.risk == "Medium Risk" %}
+                  <span class="badge text-bg-warning">Medium</span>
+                  {% else %}
+                  <span class="badge text-bg-danger">High</span>
+                  {% endif %}
+                </td>
+                <td class="small">{{ r.timestamp }}</td>
+
+                <td>
+                  <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a
+                      class="btn btn-outline-primary btn-sm btn-round"
+                      href="{{ url_for('akademik.detail_mahasiswa', nim=r.nim) }}"
+                      >Detail</a
+                    >
+
+                    <form
+                      action="{{ url_for('akademik.delete_by_nim', nim=r.nim) }}"
+                      method="post"
+                      onsubmit="return confirm('Hapus semua riwayat prediksi untuk NIM {{ r.nim }}?');"
+                    >
+                      <button
+                        class="btn btn-outline-danger btn-sm btn-round"
+                        type="submit"
+                      >
+                        Hapus NIM
+                      </button>
+                    </form>
+
+                    <form
+                      action="{{ url_for('akademik.delete_one') }}"
+                      method="post"
+                      onsubmit="return confirm('Hapus record ini ({{ r.nim }} pada {{ r.timestamp }})?');"
+                    >
+                      <input
+                        type="hidden"
+                        name="record_id"
+                        value="{{ r.record_id }}"
+                      />
+                      <button
+                        class="btn btn-danger btn-sm btn-round"
+                        type="submit"
+                      >
+                        Hapus 1
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %} {% if data|length == 0 %}
+              <tr>
+                <td colspan="11" class="text-center soft">
+                  Belum ada data prediksi.
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const fb = document.getElementById("chartFallback");
+        if (typeof Chart === "undefined") {
+          fb.textContent = "Chart.js belum termuat. Cek base.html.";
+          fb.style.display = "flex";
+          return;
+        }
+
+        try {
+          const res = await fetch("/dashboard/akademik/api/risk-summary");
+          const d = await res.json();
+
+          if (!d.labels || d.labels.length === 0) {
+            fb.textContent = "Belum ada data untuk chart.";
+            fb.style.display = "flex";
+            return;
+          }
+
+          // stabil order
+          const order = ["Low Risk", "Medium Risk", "High Risk"];
+          const map = {};
+          d.labels.forEach((lab, i) => (map[lab] = d.values[i]));
+
+          const labels = order.filter((x) => map[x] !== undefined);
+          const values = labels.map((x) => map[x]);
+
+          const ctx = document.getElementById("riskChart").getContext("2d");
+          if (window.__riskChart) window.__riskChart.destroy();
+
+          window.__riskChart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels,
+              datasets: [
+                {
+                  data: values,
+                  backgroundColor: ["#198754", "#ffc107", "#dc3545"],
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "62%",
+              plugins: {
+                legend: { position: "bottom" },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const total = context.dataset.data.reduce(
+                        (a, b) => a + b,
+                        0
+                      );
+                      const val = context.parsed;
+                      const pct = total ? ((val / total) * 100).toFixed(1) : 0;
+                      return `${context.label}: ${val} (${pct}%)`;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        } catch (e) {
+          fb.textContent =
+            "Gagal memuat chart. Pastikan endpoint /dashboard/akademik/api/risk-summary tersedia.";
+          fb.style.display = "flex";
+          console.error(e);
+        }
+      });
+    </script>
+  </div>
+</div>
+
+{% endblock %}

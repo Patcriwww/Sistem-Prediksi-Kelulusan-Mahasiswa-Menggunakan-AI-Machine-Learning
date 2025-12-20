@@ -1,0 +1,62 @@
+{% extends "base.html" %} {% block title %}Daftar Dosen{% endblock %} {% block
+content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Daftar Dosen</h4>
+        <a
+          class="btn btn-sm btn-success"
+          href="{{ url_for('akademik.add_dosen') }}"
+          >+ Tambah</a
+        >
+      </div>
+      <div class="table-responsive mt-3">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>No</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in dosens %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ d.username }}</td>
+              <td>{{ d.role }}</td>
+              <td>
+                {{ d.created_at.strftime('%Y-%m-%d') if d.created_at else '' }}
+              </td>
+              <td>
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{{ url_for('akademik.edit_dosen', user_id=d.id) }}"
+                  >Edit</a
+                >
+                <form
+                  method="post"
+                  action="{{ url_for('akademik.delete_dosen', user_id=d.id) }}"
+                  style="display: inline"
+                  onsubmit="return confirm('Hapus dosen ini?')"
+                >
+                  <button class="btn btn-sm btn-danger">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %} {% if dosens|length == 0 %}
+            <tr>
+              <td colspan="4" class="text-center soft">Belum ada dosen.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

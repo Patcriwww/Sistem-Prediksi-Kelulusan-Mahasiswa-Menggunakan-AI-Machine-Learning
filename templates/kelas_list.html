@@ -1,0 +1,60 @@
+{% extends "base.html" %} {% block title %}Daftar Kelas{% endblock %} {% block
+content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Daftar Kelas</h4>
+        <a
+          class="btn btn-sm btn-success"
+          href="{{ url_for('akademik.add_kelas') }}"
+          >+ Tambah</a
+        >
+      </div>
+      <div class="table-responsive mt-3">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>No</th>
+              <th>Kode</th>
+              <th>Nama</th>
+              <th>Fakultas</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for k in kelas_list %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ k.code }}</td>
+              <td>{{ k.name }}</td>
+              <td>{{ k.fakultas.code if k.fakultas else '-' }}</td>
+              <td>
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{{ url_for('akademik.edit_kelas', kelas_code=k.id) }}"
+                  >Edit</a
+                >
+                <form
+                  method="post"
+                  action="{{ url_for('akademik.delete_kelas', kelas_code=k.id) }}"
+                  style="display: inline"
+                  onsubmit="return confirm('Hapus kelas ini?')"
+                >
+                  <button class="btn btn-sm btn-danger">Hapus</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %} {% if kelas_list|length == 0 %}
+            <tr>
+              <td colspan="5" class="text-center soft">Belum ada kelas.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

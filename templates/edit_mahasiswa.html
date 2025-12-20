@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Edit Mahasiswa{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Edit Mahasiswa</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      {% if success %}
+      <div class="alert alert-success">Perubahan disimpan.</div>
+      {% endif %}
+
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Nama Mahasiswa</label>
+          <input class="form-control" name="nama_mahasiswa" value="{{ student.nama_mahasiswa }}" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">NIM</label>
+          <input class="form-control" name="nim" value="{{ student.nim }}" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Program Studi</label>
+          <input class="form-control" name="prodi" value="{{ student.prodi or '' }}" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Angkatan</label>
+          <input class="form-control" name="angkatan" value="{{ student.angkatan or '' }}" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kelas</label>
+          <select class="form-select" name="kelas_code">
+            <option value="">-- Tidak ada --</option>
+            {% for k in kelas_list %}
+            <option value="{{ k.id }}" {% if student.kelas_code == k.id %}selected{% endif %}>{{ k.code }} - {{ k.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Pembimbing (username)</label>
+          <select class="form-select" name="advisor_username">
+            <option value="">-- Tidak ada --</option>
+            {% for d in dosen_list %}
+            <option value="{{ d.username }}" {% if student.advisor_id == d.id %}selected{% endif %}>{{ d.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary">Simpan</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.mahasiswa_list') }}">Batal</a>
+      </form>
+
+      <hr />
+      <form method="post" action="{{ url_for('akademik.delete_mahasiswa', student_id=student.id) }}" onsubmit="return confirm('Hapus mahasiswa ini?')">
+        <button class="btn btn-danger">Hapus Mahasiswa</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

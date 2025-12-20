@@ -1,0 +1,30 @@
+{% extends "base.html" %} {% block title %}Tambah Fakultas{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Tambah Fakultas</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="alert alert-success">Fakultas berhasil ditambahkan.</div>
+      {% endif %}
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Kode</label>
+          <input class="form-control" name="code" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nama</label>
+          <input class="form-control" name="name" />
+        </div>
+        <button class="btn btn-primary">Tambah Fakultas</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.fakultas_list') }}"
+          >Batal</a
+        >
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

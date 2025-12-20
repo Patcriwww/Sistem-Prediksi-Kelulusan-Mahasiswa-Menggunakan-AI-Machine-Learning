@@ -1,0 +1,70 @@
+{% extends "base.html" %} {% block title %}Tambah Mahasiswa{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Tambah Mahasiswa</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="alert alert-success">Mahasiswa berhasil ditambahkan.</div>
+      {% endif %}
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Username (opsional)</label>
+          <input
+            class="form-control"
+            name="username"
+            placeholder="Jika ingin buat akun mahasiswa"
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password (wajib jika username diisi)</label>
+          <input class="form-control" name="password" type="password" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nama Mahasiswa</label>
+          <input class="form-control" name="nama_mahasiswa" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">NIM</label>
+          <input class="form-control" name="nim" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Prodi</label>
+          <input class="form-control" name="prodi" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Angkatan</label>
+          <input class="form-control" name="angkatan" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kelas</label>
+          <select class="form-select" name="kelas_code">
+            <option value="">-- Tidak ada --</option>
+            {% for k in kelas_list %}
+            <option value="{{ k.id }}">{{ k.code }} - {{ k.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label"
+            >Dosen Pembimbing (username, opsional)</label
+          >
+          <select name="advisor_username" class="form-select">
+            <option value="">-- Pilih (opsional) --</option>
+            {% for d in dosen_list %}
+            <option value="{{ d.username }}">{{ d.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary">Tambah Mahasiswa</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.dashboard') }}"
+          >Batal</a
+        >
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

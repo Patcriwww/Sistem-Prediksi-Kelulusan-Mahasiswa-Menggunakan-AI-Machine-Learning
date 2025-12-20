@@ -38,11 +38,11 @@ Scikit-learn
 HTML, CSS, Jinja2 Template
 
 📥 Input Data Model
-Variabel	Deskripsi
-IPK	Indeks Prestasi Kumulatif
-SKS Lulus	Total SKS yang telah diselesaikan
-Presensi (%)	Persentase kehadiran kuliah
-Mata Kuliah Mengulang	Jumlah mata kuliah yang diulang
+Variabel Deskripsi
+IPK Indeks Prestasi Kumulatif
+SKS Lulus Total SKS yang telah diselesaikan
+Presensi (%) Persentase kehadiran kuliah
+Mata Kuliah Mengulang Jumlah mata kuliah yang diulang
 🚀 Cara Menjalankan Aplikasi
 1️⃣ Clone Repository
 git clone https://github.com/USERNAME/prediksi-kelulusan-mahasiswa.git
@@ -51,10 +51,20 @@ cd prediksi-kelulusan-mahasiswa
 2️⃣ Install Dependencies
 pip install -r requirements.txt
 
-3️⃣ Jalankan Aplikasi
+3️⃣ Database (PostgreSQL)
+
+- Buat database: `db_prediksi_kelulusan` di server PostgreSQL Anda.
+- Set environment variable `DATABASE_URL` dengan connection string PostgreSQL Anda, misal:
+
+  `postgresql://postgres:postgres@db.ltrpqqaagkhzqfatyvir.supabase.co:5432/db_prediksi_kelulusan`
+
+- Seed data awal (user & student):
+  `python scripts/seed_db.py`
+
+4️⃣ Jalankan Aplikasi
 python app.py
 
-4️⃣ Buka di browser
+5️⃣ Buka di browser
 http://127.0.0.1:5000/
 
 📁 Struktur Project
@@ -62,4 +72,6 @@ http://127.0.0.1:5000/
 ├── requirements.txt
 ├── README.md
 └── templates/
-    └── index.html
+└── index.html
+
+# ai-for-education

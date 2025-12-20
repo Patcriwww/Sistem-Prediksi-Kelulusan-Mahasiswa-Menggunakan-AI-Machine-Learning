@@ -1,0 +1,35 @@
+{
+  "features": [
+    "ipk",
+    "sks_lulus",
+    "presensi",
+    "mengulang"
+  ],
+  "split": {
+    "train": 0.8,
+    "val": 0.1,
+    "test": 0.1
+  },
+  "best_params": {
+    "clf__n_estimators": 100,
+    "clf__min_samples_split": 6,
+    "clf__min_samples_leaf": 3,
+    "clf__max_depth": 5,
+    "clf__class_weight": null
+  },
+  "metrics": {
+    "val_uncalibrated": {
+      "accuracy": 0.7,
+      "roc_auc": 0.8611111111111112
+    },
+    "val_calibrated": {
+      "accuracy": 0.84,
+      "roc_auc": 0.8611111111111112
+    },
+    "test_calibrated": {
+      "accuracy": 0.7,
+      "roc_auc": 0.7239583333333334
+    }
+  },
+  "model_path": "model_kelulusan.joblib"
+}

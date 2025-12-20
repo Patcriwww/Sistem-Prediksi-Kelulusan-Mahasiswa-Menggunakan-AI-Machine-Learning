@@ -1,0 +1,42 @@
+{% extends "base.html" %} {% block title %}Assign Pembimbing{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Assign Dosen Pembimbing</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="alert alert-success">Pembimbing berhasil diassign.</div>
+      {% endif %}
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Mahasiswa (NIM)</label>
+          <select name="nim" class="form-select" required>
+            <option value="">-- Pilih Mahasiswa --</option>
+            {% for s in students %}
+            <option value="{{ s.nim }}">
+              {{ s.nim }} — {{ s.nama_mahasiswa }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Dosen Pembimbing (username)</label>
+          <select name="advisor_username" class="form-select" required>
+            <option value="">-- Pilih Dosen --</option>
+            {% for d in dosen_list %}
+            <option value="{{ d.username }}">{{ d.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-primary">Assign</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.dashboard') }}"
+          >Batal</a
+        >
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %} {% block title %}Edit Dosen{% endblock %} {% block
+content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Edit Dosen</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="alert alert-success">Perubahan disimpan.</div>
+      {% endif %}
+
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input
+            class="form-control"
+            name="username"
+            value="{{ user.username }}"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label"
+            >Password (biarkan kosong jika tidak ingin mengganti)</label
+          >
+          <input class="form-control" name="password" type="password" />
+        </div>
+        <button class="btn btn-primary">Simpan</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.dosen_list') }}"
+          >Batal</a
+        >
+      </form>
+
+      <hr />
+      <form
+        method="post"
+        action="{{ url_for('akademik.delete_dosen', user_id=user.id) }}"
+        onsubmit="return confirm('Hapus dosen ini?')"
+      >
+        <button class="btn btn-danger">Hapus Dosen</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

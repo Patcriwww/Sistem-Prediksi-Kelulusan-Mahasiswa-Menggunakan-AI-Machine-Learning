@@ -1,0 +1,8 @@
+record_id,username,nama_mahasiswa,nim,prodi,angkatan,kelas,ipk,mengulang,presensi,sks_lulus,probability,risk,recommendation,timestamp
+86e03b1b-ab63-4672-9938-5093d02a3ee3,mhs01,Alamsyah Hutama,0112523004,Informatika,2023,IF23,3.8,0,100,100,78.0,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 00:30:36
+a1195a22-b811-4e11-beb7-56761e79bfce,mhs02,Bona Firmanto,0112523009,Informatika,2023,IF23,3.9,0,100,100,78.0,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 00:31:11
+b05e5536-d953-4f81-9188-c8ee5e30158d,mhs03,M. Ridwan,0112523022,Informatika,2023,IF23,3.7,0,100,100,67.0,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 00:31:36
+1196a941-35d4-44c0-8731-1e92d4c1b453,mhs04,Fachri Reyhan,0112523013,Informatika,2023,IF23,4.0,0,100,100,78.0,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 00:32:08
+55c84890-e9b9-4003-ac7f-6674844db005,mhs01,Alamsyah Hutama,0112523004,Informatika,2023,IF23,4.0,0,100,100,83.56,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 06:34:49
+2ba04aae-9a7a-4077-8da4-18685d6b874f,mhs01,Alamsyah Hutama,0112523004,Informatika,2023,IF23,4.0,0,90,1100,74.88,Medium Risk,Disarankan bimbingan akademik rutin dan evaluasi strategi belajar.,2025-12-20 06:35:06
+2aa17b27-5303-4d3e-9762-ce2f09fcf28e,mhs01,Alamsyah Hutama,0112523004,Informatika,2023,IF23,4.0,0,90,110,85.49,Low Risk,Pertahankan performa akademik dan tingkatkan konsistensi belajar.,2025-12-20 06:35:12

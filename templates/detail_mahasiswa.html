@@ -1,0 +1,295 @@
+{% extends "base.html" %} {% block title %}Detail Mahasiswa{% endblock %} {%
+block content %}
+
+<style>
+  .pill {
+    border-radius: 999px;
+  }
+  .card-soft {
+    border: 1px solid #eef2f6;
+    background: #fbfcfe;
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .kpi {
+    border: 1px solid #e5edff;
+    background: #f1f5ff;
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .muted {
+    color: #667085;
+  }
+  .table thead th {
+    white-space: nowrap;
+  }
+</style>
+
+<div class="d-flex align-items-start justify-content-between mb-3">
+  <div>
+    <h4 class="fw-bold mb-1">Detail Mahasiswa</h4>
+    <div class="muted">
+      Profil, ringkasan risiko, dan riwayat prediksi berbasis CSV.
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a
+      class="btn btn-outline-secondary btn-sm btn-round"
+      href="{{ back_url if back_url else url_for('akademik.dashboard') }}"
+      >Kembali</a
+    >
+
+    {% if session.role == "akademik" %}
+    <form
+      action="{{ url_for('akademik.delete_by_nim', nim=profile.nim) }}"
+      method="post"
+      onsubmit="return confirm('Hapus semua riwayat prediksi untuk NIM {{ profile.nim }}?');"
+    >
+      <button class="btn btn-outline-danger btn-sm btn-round" type="submit">
+        Hapus Semua Riwayat
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- LEFT: PROFILE + KPI + CHART -->
+  <div class="col-lg-4">
+    <div class="card mb-4">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-bold">Profil</div>
+          <span class="badge text-bg-light text-primary pill">Student</span>
+        </div>
+
+        <div class="fw-semibold fs-5">{{ profile.nama_mahasiswa }}</div>
+        <div class="muted">NIM: {{ profile.nim }}</div>
+        <div class="muted">Prodi: {{ profile.prodi }}</div>
+        <div class="muted">Angkatan: {{ profile.angkatan }}</div>
+        <div class="muted mb-3">Kelas: {{ profile.kelas }}</div>
+
+        {% if advisor %}
+        <div class="muted">
+          Pembimbing: <strong>{{ advisor.username }}</strong>
+        </div>
+        {% endif %} {% if history and history|length > 0 %} {% set latest =
+        history[-1] %}
+        <div class="kpi">
+          <div class="muted small">Hasil Terakhir (Latest)</div>
+          <div class="fw-bold" style="font-size: 2rem; line-height: 1.1">
+            {{ latest.probability }}%
+          </div>
+          <div class="mt-2">
+            <span class="muted small">Risk:</span>
+            <span class="fw-semibold">{{ latest.risk }}</span>
+            {% if latest.risk == "Low Risk" %}
+            <span class="badge text-bg-success pill ms-1">Low</span>
+            {% elif latest.risk == "Medium Risk" %}
+            <span class="badge text-bg-warning pill ms-1">Medium</span>
+            {% else %}
+            <span class="badge text-bg-danger pill ms-1">High</span>
+            {% endif %}
+          </div>
+          <div class="muted small mt-2">{{ latest.timestamp }}</div>
+        </div>
+
+        <div class="card-soft mt-3">
+          <div class="fw-semibold mb-1">Rekomendasi Intervensi</div>
+          <div class="muted">{{ latest.recommendation }}</div>
+        </div>
+        {% else %}
+        <div class="card-soft">
+          <div class="muted">
+            Belum ada riwayat prediksi untuk mahasiswa ini.
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Chart mini -->
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-bold">Trend Probabilitas</div>
+          <span class="muted small">Line Chart</span>
+        </div>
+        <div class="muted small mb-3">
+          Menampilkan perubahan probabilitas dari waktu ke waktu.
+        </div>
+
+        <div class="position-relative" style="height: 220px">
+          <canvas id="probChart"></canvas>
+          <div
+            id="probFallback"
+            class="muted small text-center"
+            style="
+              display: none;
+              position: absolute;
+              inset: 0;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            Chart tidak dapat ditampilkan.
+          </div>
+        </div>
+
+        <div class="muted small mt-2">
+          Catatan: membutuhkan Chart.js dari <code>base.html</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: HISTORY TABLE -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="fw-bold">Riwayat Prediksi</div>
+          <div class="muted small">Total: {{ history|length }}</div>
+        </div>
+        <div class="muted small mb-3">
+          Data diurutkan dari yang paling lama ke paling baru. Tombol hapus
+          menggunakan <b>record_id</b>.
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr class="text-center">
+                <th style="width: 55px">No</th>
+                <th style="width: 80px">IPK</th>
+                <th style="width: 90px">SKS</th>
+                <th style="width: 110px">Presensi</th>
+                <th style="width: 110px">Mengulang</th>
+                <th style="width: 110px">Prob.</th>
+                <th style="width: 120px">Risk</th>
+                <th class="text-start">Rekomendasi</th>
+                <th style="width: 170px">Waktu</th>
+                {% if session.role == "akademik" %}
+                <th style="width: 120px">Aksi</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in history %}
+              <tr class="text-center">
+                <td>{{ loop.index }}</td>
+                <td>{{ r.ipk }}</td>
+                <td>{{ r.sks_lulus }}</td>
+                <td>{{ r.presensi }}%</td>
+                <td>{{ r.mengulang }}</td>
+                <td class="fw-semibold text-primary">{{ r.probability }}%</td>
+                <td>
+                  {% if r.risk == "Low Risk" %}
+                  <span class="badge text-bg-success pill">Low</span>
+                  {% elif r.risk == "Medium Risk" %}
+                  <span class="badge text-bg-warning pill">Medium</span>
+                  {% else %}
+                  <span class="badge text-bg-danger pill">High</span>
+                  {% endif %}
+                </td>
+                <td class="text-start">{{ r.recommendation }}</td>
+                <td class="small">{{ r.timestamp }}</td>
+
+                {% if session.role == "akademik" %}
+                <td>
+                  <form
+                    action="{{ url_for('akademik.delete_one') }}"
+                    method="post"
+                    onsubmit="return confirm('Hapus record ini ({{ profile.nim }} @ {{ r.timestamp }})?');"
+                  >
+                    <input
+                      type="hidden"
+                      name="record_id"
+                      value="{{ r.record_id }}"
+                    />
+                    <button
+                      class="btn btn-danger btn-sm btn-round"
+                      type="submit"
+                    >
+                      Hapus
+                    </button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %} {% if history|length == 0 %}
+              <tr>
+                <td
+                  colspan="{% if session.role == 'akademik' %}10{% else %}9{% endif %}"
+                  class="text-center muted"
+                >
+                  Belum ada riwayat prediksi.
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const fb = document.getElementById("probFallback");
+    if (typeof Chart === "undefined") {
+      fb.textContent = "Chart.js belum termuat. Tambahkan Chart.js di base.html.";
+      fb.style.display = "flex";
+      return;
+    }
+
+    const labels = [
+      {% for r in history %}
+        "{{ r.timestamp }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const values = [
+      {% for r in history %}
+        {{ (r.probability or "0")|float }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    if (!labels.length) {
+      fb.textContent = "Belum ada data untuk chart.";
+      fb.style.display = "flex";
+      return;
+    }
+
+    const ctx = document.getElementById("probChart").getContext("2d");
+    if (window.__probChart) window.__probChart.destroy();
+
+    window.__probChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Probabilitas (%)",
+          data: values,
+          tension: 0.35,
+          pointRadius: 3,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { suggestedMin: 0, suggestedMax: 100 }
+        },
+        plugins: {
+          legend: { display: true }
+        }
+      }
+    });
+  });
+</script>
+
+{% endblock %}

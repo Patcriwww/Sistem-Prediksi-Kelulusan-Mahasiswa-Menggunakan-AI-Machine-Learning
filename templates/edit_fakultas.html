@@ -1,0 +1,43 @@
+{% extends "base.html" %} {% block title %}Edit Fakultas{% endblock %} {% block
+content %}
+<div class="row">
+  <div class="col-md-3">{% include 'akademik/_sidebar.html' %}</div>
+  <div class="col-md-9">
+    <div class="card p-4">
+      <h4>Edit Fakultas</h4>
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %} {% if success %}
+      <div class="alert alert-success">Perubahan disimpan.</div>
+      {% endif %}
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Kode</label>
+          <input
+            class="form-control"
+            name="code"
+            value="{{ fakultas.code }}"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nama</label>
+          <input class="form-control" name="name" value="{{ fakultas.name }}" />
+        </div>
+        <button class="btn btn-primary">Simpan</button>
+        <a class="btn btn-link" href="{{ url_for('akademik.fakultas_list') }}"
+          >Batal</a
+        >
+      </form>
+      <hr />
+      <form
+        method="post"
+        action="{{ url_for('akademik.delete_fakultas', fakultas_id=fakultas.id) }}"
+        onsubmit="return confirm('Hapus fakultas ini?')"
+      >
+        <button class="btn btn-danger">Hapus Fakultas</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
