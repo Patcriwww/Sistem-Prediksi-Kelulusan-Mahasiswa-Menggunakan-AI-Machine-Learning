@@ -7,6 +7,5 @@ joblib==1.4.2
 scikit-learn==1.5.1
 bcrypt
 flask_sqlalchemy==3.0.2
-psycopg2-binary==2.9.6
+psycopg[binary]
 alembic==1.11.1
-

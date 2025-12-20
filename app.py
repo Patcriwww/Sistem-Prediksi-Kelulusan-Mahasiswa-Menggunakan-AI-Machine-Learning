@@ -6,7 +6,10 @@ from controllers.dosen_controller import dosen_bp
 from controllers.akademik_controller import akademik_bp
 from extensions import db
 
-DEFAULT_DB_URL = "postgresql://postgres:postgres@db.ltrpqqaagkhzqfatyvir.supabase.co:5432/db_prediksi_kelulusan"
+DEFAULT_DB_URL = (
+    "postgresql+psycopg://postgres:postgres@"
+    "db.ltrpqqaagkhzqfatyvir.supabase.co:5432/db_prediksi_kelulusan"
+)
 
 
 def create_app():
