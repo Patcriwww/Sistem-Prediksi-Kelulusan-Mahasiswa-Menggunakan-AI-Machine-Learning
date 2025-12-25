@@ -38,5 +38,5 @@ def create_app():
 app = create_app()
 
 # ❌ JANGAN ADA app.run() DI PRODUCTION
-# if __name__ == "__main__":
-#     app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
