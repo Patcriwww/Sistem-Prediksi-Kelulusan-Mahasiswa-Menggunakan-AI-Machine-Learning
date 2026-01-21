@@ -1,4 +1,4 @@
-# 🎓 Prediksi Kelulusan Mahasiswa Menggunakan AI & Machine Learning
+# Prediksi Kelulusan Mahasiswa Menggunakan AI & Machine Learning
 
 Aplikasi web berbasis **Flask** untuk memprediksi kemungkinan mahasiswa
 lulus tepat waktu berdasarkan data akademik menggunakan model **Machine
@@ -9,7 +9,7 @@ data di lingkungan pendidikan.
 
 ------------------------------------------------------------------------
 
-## 🎯 Tujuan Proyek
+## Tujuan Proyek
 
 -   Mendeteksi risiko keterlambatan kelulusan sejak dini\
 -   Mendukung pengambilan keputusan akademik berbasis data\
@@ -18,7 +18,7 @@ data di lingkungan pendidikan.
 
 ------------------------------------------------------------------------
 
-## 🧠 Fitur Utama
+## Fitur Utama
 
 -   Prediksi status kelulusan (Lulus / Terlambat)\
 -   Probabilitas kelulusan dalam persentase\
@@ -28,7 +28,7 @@ data di lingkungan pendidikan.
 
 ------------------------------------------------------------------------
 
-## 🛠 Teknologi yang Digunakan
+## Teknologi yang Digunakan
 
 -   Python\
 -   Flask\
@@ -39,7 +39,7 @@ data di lingkungan pendidikan.
 
 ------------------------------------------------------------------------
 
-## 📥 Variabel Input Model
+## Variabel Input Model
 
   Variabel                Deskripsi
   ----------------------- -----------------------------------
@@ -50,7 +50,7 @@ data di lingkungan pendidikan.
 
 ------------------------------------------------------------------------
 
-## 🚀 Cara Menjalankan Aplikasi
+## Cara Menjalankan Aplikasi
 
 ### 1. Clone Repository
 
@@ -99,7 +99,7 @@ http://127.0.0.1:5000/
 
 ------------------------------------------------------------------------
 
-## 📁 Struktur Project
+## Struktur Project
 
 ``` bash
 prediksi-kelulusan-mahasiswa/
@@ -115,7 +115,7 @@ prediksi-kelulusan-mahasiswa/
 
 ------------------------------------------------------------------------
 
-## 📌 Tag
+## Tag
 
 `#ai-for-education` `#machine-learning` `#flask` `#data-science`
 `#academic-analytics`
