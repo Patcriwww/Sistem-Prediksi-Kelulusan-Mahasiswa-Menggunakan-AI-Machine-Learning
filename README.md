@@ -1,77 +1,121 @@
-Prediksi Kelulusan Mahasiswa Menggunakan AI & Machine Learning
+# 🎓 Prediksi Kelulusan Mahasiswa Menggunakan AI & Machine Learning
 
-Aplikasi web berbasis Flask untuk memprediksi kemungkinan mahasiswa lulus tepat waktu berdasarkan data akademik sederhana menggunakan model Machine Learning (Random Forest).
-Sistem juga memberikan probabilitas kelulusan dan rekomendasi tindakan akademik.
+Aplikasi web berbasis **Flask** untuk memprediksi kemungkinan mahasiswa
+lulus tepat waktu berdasarkan data akademik menggunakan model **Machine
+Learning (Random Forest)**.\
+Sistem ini menampilkan **status kelulusan**, **probabilitas**, serta
+**rekomendasi akademik** untuk membantu pengambilan keputusan berbasis
+data di lingkungan pendidikan.
 
-🎯 Tujuan Proyek
+------------------------------------------------------------------------
 
-Mendeteksi risiko mahasiswa terlambat lulus lebih awal
+## 🎯 Tujuan Proyek
 
-Membantu pengambilan keputusan akademik secara data-driven
+-   Mendeteksi risiko keterlambatan kelulusan sejak dini\
+-   Mendukung pengambilan keputusan akademik berbasis data\
+-   Memberikan rekomendasi akademik yang konstruktif\
+-   Menjadi contoh implementasi AI dalam sistem pendidikan
 
-Memberikan rekomendasi akademik yang konstruktif
+------------------------------------------------------------------------
 
-Contoh implementasi AI pada sistem pendidikan
+## 🧠 Fitur Utama
 
-🧠 Fitur Utama
+-   Prediksi status kelulusan (Lulus / Terlambat)\
+-   Probabilitas kelulusan dalam persentase\
+-   Rekomendasi langkah akademik\
+-   Ringkasan data input mahasiswa\
+-   Antarmuka web modern dan responsif
 
-Prediksi status kelulusan (Lulus / Terlambat)
+------------------------------------------------------------------------
 
-Probabilitas kelulusan (%)
+## 🛠 Teknologi yang Digunakan
 
-Rekomendasi langkah akademik
+-   Python\
+-   Flask\
+-   Pandas\
+-   Scikit-learn\
+-   PostgreSQL\
+-   HTML, CSS, Jinja2
 
-Ringkasan input data
+------------------------------------------------------------------------
 
-UI modern & responsif
+## 📥 Variabel Input Model
 
-🛠 Teknologi yang Digunakan
+  Variabel                Deskripsi
+  ----------------------- -----------------------------------
+  IPK                     Indeks Prestasi Kumulatif
+  SKS Lulus               Total SKS yang telah diselesaikan
+  Presensi (%)            Persentase kehadiran kuliah
+  Mata Kuliah Mengulang   Jumlah mata kuliah yang diulang
 
-Python
+------------------------------------------------------------------------
 
-Flask
+## 🚀 Cara Menjalankan Aplikasi
 
-Pandas
+### 1. Clone Repository
 
-Scikit-learn
-
-HTML, CSS, Jinja2 Template
-
-📥 Input Data Model
-Variabel Deskripsi
-IPK Indeks Prestasi Kumulatif
-SKS Lulus Total SKS yang telah diselesaikan
-Presensi (%) Persentase kehadiran kuliah
-Mata Kuliah Mengulang Jumlah mata kuliah yang diulang
-🚀 Cara Menjalankan Aplikasi
-1️⃣ Clone Repository
+``` bash
 git clone https://github.com/USERNAME/prediksi-kelulusan-mahasiswa.git
 cd prediksi-kelulusan-mahasiswa
+```
 
-2️⃣ Install Dependencies
+### 2. Install Dependencies
+
+``` bash
 pip install -r requirements.txt
+```
 
-3️⃣ Database (PostgreSQL)
+### 3. Setup Database (PostgreSQL)
 
-- Buat database: `db_prediksi_kelulusan` di server PostgreSQL Anda.
-- Set environment variable `DATABASE_URL` dengan connection string PostgreSQL Anda, misal:
+-   Buat database:
 
-  `postgresql://postgres:postgres@db.ltrpqqaagkhzqfatyvir.supabase.co:5432/db_prediksi_kelulusan`
+``` sql
+CREATE DATABASE db_prediksi_kelulusan;
+```
 
-- Seed data awal (user & student):
-  `python scripts/seed_db.py`
+-   Set environment variable `DATABASE_URL`:
 
-4️⃣ Jalankan Aplikasi
+``` bash
+postgresql://postgres:password@host:5432/db_prediksi_kelulusan
+```
+
+-   Seed data awal:
+
+``` bash
+python scripts/seed_db.py
+```
+
+### 4. Jalankan Aplikasi
+
+``` bash
 python app.py
+```
 
-5️⃣ Buka di browser
+### 5. Akses di Browser
+
+``` text
 http://127.0.0.1:5000/
+```
 
-📁 Struktur Project
+------------------------------------------------------------------------
+
+## 📁 Struktur Project
+
+``` bash
+prediksi-kelulusan-mahasiswa/
+│
 ├── app.py
 ├── requirements.txt
 ├── README.md
+├── scripts/
+│   └── seed_db.py
 └── templates/
-└── index.html
+    └── index.html
+```
 
-# ai-for-education
+------------------------------------------------------------------------
+
+## 📌 Tag
+
+`#ai-for-education` `#machine-learning` `#flask` `#data-science`
+`#academic-analytics`
